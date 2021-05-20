@@ -52,6 +52,14 @@ class Lsv_Login_Public {
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
 
+		if(get_option( "lsvlogin_page") !== "" && get_option( "lsvregister_page") !== ""){
+			if(get_option( "lsvlogin_page") !== "-1" && get_option( "lsvregister_page") !== "-1"){
+				// Login Template
+				add_shortcode( 'lsv_login', [$this,'lsv_login_template_display'] );
+				// Register Template
+				add_shortcode( 'lsv_registration', [$this,'lsv_registration_template_display'] );
+			}
+		}
 	}
 
 	/**
@@ -60,21 +68,12 @@ class Lsv_Login_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Lsv_Login_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Lsv_Login_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/lsv-login-public.css', array(), $this->version, 'all' );
-
+		if(is_page($this->get_post_slug(get_option( "lsvlogin_page")))){
+			wp_enqueue_style( $this->plugin_name.'_login', plugin_dir_url( __FILE__ ) . 'css/lsv-login-display.css', array(), $this->version, 'all' );
+		}
+		if(is_page($this->get_post_slug(get_option( "lsvregister_page")))){
+			wp_enqueue_style( $this->plugin_name.'_register', plugin_dir_url( __FILE__ ) . 'css/lsv-register-display.css', array(), $this->version, 'all' );
+		}
 	}
 
 	/**
@@ -83,21 +82,210 @@ class Lsv_Login_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Lsv_Login_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Lsv_Login_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/lsv-login-public.js', array( 'jquery' ), $this->version, false );
-
+		if(is_page($this->get_post_slug(get_option( "lsvlogin_page")))){
+			wp_enqueue_script( $this->plugin_name.'_login', plugin_dir_url( __FILE__ ) . 'js/lsv-login-public.js', array( 'jquery' ), $this->version, false );
+			wp_localize_script($this->plugin_name.'_login', "public_ajax_requ", array(
+				'ajaxurl' => admin_url('admin-ajax.php'),
+				'nonce' => wp_create_nonce('ajax-nonce'),
+			));
+		}
+		if(is_page($this->get_post_slug(get_option( "lsvregister_page")))){
+			wp_enqueue_script( $this->plugin_name.'_register', plugin_dir_url( __FILE__ ) . 'js/lsv-register-display.js', array( 'jquery' ), $this->version, false );
+			wp_localize_script($this->plugin_name.'_register', "public_ajax_requ", array(
+				'ajaxurl' => admin_url('admin-ajax.php'),
+				'nonce' => wp_create_nonce('ajax-nonce'),
+			));
+		}
 	}
 
+	/**
+     * Get post slug by id
+     */
+    public function get_post_slug($post_id)
+    {
+        global $wpdb;
+		if($post_id !== ""){
+			if ($slug = $wpdb->get_var("SELECT post_name FROM {$wpdb->prefix}posts WHERE ID = $post_id")) {
+				return $slug;
+			} else {
+				return '';
+			}
+		}
+    }
+
+	// LSV Login template
+	function lsv_login_template_display(){
+		ob_start();
+		require_once plugin_dir_path( __FILE__ )."partials/lsv-login-display.php";
+		return ob_get_clean();
+		exit;
+	}
+	// LSV Registration template
+	function lsv_registration_template_display(){
+		ob_start();
+		require_once plugin_dir_path( __FILE__ )."partials/lsv-register-display.php";
+		return ob_get_clean();
+		exit;
+	}
+
+	// Email check
+	function lsv_email_check(){
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'ajax-nonce' ) ) {
+			die ( 'Hey! What are you doing?');
+		}
+
+		if(isset($_POST['email'])){
+			if(!empty($_POST['email'])){
+				$email = sanitize_email( $_POST['email'] );
+				if(get_user_by('email', $email )){
+					echo json_encode(array("exist" => 'exist'));
+					die;
+				}else{
+					echo json_encode(array("notexist" => 'notexist'));
+					die;
+				}
+				die;
+			}
+			die;
+		}
+		die;
+	}
+
+	// Registration process
+	function lsv_registration_process(){
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'ajax-nonce' ) ) {
+			die ( 'Hey! What are you doing?');
+		}
+
+		if(isset($_POST['data'])){
+			$firstname = sanitize_text_field($_POST['data']['firstname']);
+            $lastname = sanitize_text_field($_POST['data']['lastname']);
+            $email = sanitize_email($_POST['data']['email']);
+            $phone = intval($_POST['data']['phone']);
+            $password = sanitize_text_field($_POST['data']['password']);
+            $country = sanitize_text_field($_POST['data']['country']);
+
+			$getuserdata = get_user_by('email', $email );
+            if( $getuserdata ){
+                echo 'User Exist';
+                die;
+            }
+
+			$userdata = array(
+				'user_login'    =>  strtolower(explode('@',$email)[0]),
+				'user_nicename'    =>  strtolower($firstname.'-'.$lastname),
+				'user_email'     =>  strtolower($email),
+				'user_pass'     =>  $password,
+				'role'          => 'subscriber',
+				'show_admin_bar_front' => false
+			);
+			$user_id = wp_insert_user( $userdata );
+
+			if(!$user_id){
+				echo json_encode(array("error" => 'error'));
+				die;
+			}
+
+			$usermeta = update_user_meta( $user_id, 'first_name', ucfirst($firstname) );
+			$usermeta = update_user_meta( $user_id, 'last_name', ucfirst($lastname) );
+			$usermeta = update_user_meta( $user_id, 'phone', intval($phone) );
+			$usermeta = update_user_meta( $user_id, 'country', $country );
+
+			if(is_wp_error($usermeta)){
+				delete_user_meta( $user_id, 'first_name');
+				delete_user_meta( $user_id, 'last_name');
+				delete_user_meta( $user_id, 'phone');
+				delete_user_meta( $user_id, 'country');
+				wp_delete_user( $user_id );
+				echo json_encode(array("error" => 'error'));
+				die;
+			}
+
+			echo json_encode(array("success" => home_url($this->get_post_slug(get_option( "lsvlogin_page" ))) ));
+			die;
+		}
+		die;
+	}
+
+	// Login requests
+	function lsv_login_requests(){
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'ajax-nonce' ) ) {
+			die ( 'Hey! What are you doing?');
+		}
+
+		if(isset($_POST['email']) && isset($_POST['password'])){
+			global $wpdb;
+			$email = sanitize_email( $_POST['email'] );
+			$password = sanitize_text_field( $_POST['password'] );
+
+			if ( $user = get_user_by('email', $email ) ) {
+				// check the user's login with their password.
+				if ( wp_check_password( $password, $user->user_pass, $user->ID ) ) {
+					wp_clear_auth_cookie();
+					wp_set_current_user($user->ID);
+					wp_set_auth_cookie($user->ID);
+
+					// Storing logs
+					$logtbl = $wpdb->prefix.'lsv_logs';
+					$wpdb->insert($logtbl,array(
+						'user_id'	=> $user->ID,
+						'firstname'	=> get_user_meta( $user->ID, 'first_name', true),
+						'lastname'	=> get_user_meta( $user->ID, 'last_name', true),
+						'phone'	=> get_user_meta( $user->ID, 'phone', true),
+						'email'	=> $email,
+						'country'	=> get_user_meta( $user->ID, 'country', true),
+						'logindate'	=> date('d-m-y'),
+					),array(
+						'%d','%s','%s','%d','%s','%s','%s'
+					));
+
+					echo json_encode(array("success" => get_option( "lsvredirect_after_login" )));
+					die;
+				}else{
+					echo json_encode(array("error" => "Incorrect password!"));
+					die;
+				}
+			}
+			die;
+		}
+		die;
+	}
+
+
+	// Password change
+	function lsv_password_change(){
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'ajax-nonce' ) ) {
+			die ( 'Hey! What are you doing?');
+		}
+
+		if(isset($_POST['email']) && isset($_POST['password'])){
+			$email = sanitize_email($_POST['email'] );
+			$password = sanitize_text_field($_POST['password'] );
+
+			if ( $user = get_user_by('email', $email ) ) {
+				
+				global $wpdb;
+ 
+				$hash = wp_hash_password( $password );
+				$wpdb->update(
+					$wpdb->prefix.'users',
+					array(
+						'user_pass'           => $hash,
+					),
+					array( 'ID' => $user->ID )
+				);
+			
+				if(!is_wp_error( $wpdb )){
+					echo json_encode(array("success" => home_url($this->get_post_slug(get_option( "lsvlogin_page" ))) ));
+					die;
+				}
+
+				clean_user_cache( $user->ID );
+			}
+			echo json_encode(array("error" => home_url($this->get_post_slug(get_option( "lsvlogin_page" ))).'?forgot=true' ));
+			die;
+		}
+		die;
+	}
+	
 }

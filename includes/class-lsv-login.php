@@ -156,6 +156,7 @@ class Lsv_Login {
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'lsv_register_menupage' );
 
 	}
 
@@ -172,6 +173,22 @@ class Lsv_Login {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		
+		// User email check
+		$this->loader->add_action("wp_ajax_lsv_email_check", $plugin_public, "lsv_email_check");
+    	$this->loader->add_action("wp_ajax_nopriv_lsv_email_check", $plugin_public, "lsv_email_check");
+
+		// Registrations
+		$this->loader->add_action("wp_ajax_lsv_registration_process", $plugin_public, "lsv_registration_process");
+    	$this->loader->add_action("wp_ajax_nopriv_lsv_registration_process", $plugin_public, "lsv_registration_process");
+
+		// Login
+		$this->loader->add_action("wp_ajax_lsv_login_requests", $plugin_public, "lsv_login_requests");
+    	$this->loader->add_action("wp_ajax_nopriv_lsv_login_requests", $plugin_public, "lsv_login_requests");
+
+		// Password changing
+		$this->loader->add_action("wp_ajax_lsv_password_change", $plugin_public, "lsv_password_change");
+    	$this->loader->add_action("wp_ajax_nopriv_lsv_password_change", $plugin_public, "lsv_password_change");
 
 	}
 
