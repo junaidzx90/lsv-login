@@ -1,6 +1,8 @@
 <?php
 if(is_user_logged_in(  )){
-  wp_safe_redirect( home_url('/') );
+  if(!current_user_can( 'administrator' )){
+    wp_safe_redirect( home_url('/') );
+  }
 }
 /**
  * Provide a public-facing view for the plugin
@@ -14,14 +16,14 @@ if(is_user_logged_in(  )){
  * @subpackage Lsv_Login/public/partials
  */
 require_once LSV_PATH."public/class-lsv-login-public.php";
-class Login_Page_View extends Lsv_Login_Public{
+class Register_Page_View extends Lsv_Login_Public{
     public $get_post_slug;
 
     function __construct($page = ''){
         $this->matchfield_login_error = $this->get_post_slug($page);
     }
 }
-$public_ins = new Login_Page_View();
+$public_ins = new Register_Page_View();
 $public_ins->matchfield_login_error;
 ?>
 

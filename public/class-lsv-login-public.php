@@ -104,7 +104,7 @@ class Lsv_Login_Public {
     public function get_post_slug($post_id)
     {
         global $wpdb;
-		if($post_id !== ""){
+		if(!empty($post_id)){
 			if ($slug = $wpdb->get_var("SELECT post_name FROM {$wpdb->prefix}posts WHERE ID = $post_id")) {
 				return $slug;
 			} else {
@@ -245,6 +245,9 @@ class Lsv_Login_Public {
 					echo json_encode(array("error" => "Incorrect password!"));
 					die;
 				}
+			}else{
+				echo json_encode(array("error" => "Incorrect email!"));
+				die;
 			}
 			die;
 		}
