@@ -68,10 +68,10 @@ class Lsv_Login_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
-		if(is_page($this->get_post_slug(get_option( "lsvlogin_page")))){
+		if(is_page($this->get_post_slug(get_option( "lsvlogin_page"))) || is_page( 'post' )){
 			wp_enqueue_style( $this->plugin_name.'_login', plugin_dir_url( __FILE__ ) . 'css/lsv-login-display.css', array(), $this->version, 'all' );
 		}
-		if(is_page($this->get_post_slug(get_option( "lsvregister_page")))){
+		if(is_page($this->get_post_slug(get_option( "lsvregister_page"))) || is_page( 'post' )){
 			wp_enqueue_style( $this->plugin_name.'_register', plugin_dir_url( __FILE__ ) . 'css/lsv-register-display.css', array(), $this->version, 'all' );
 		}
 	}
@@ -82,14 +82,14 @@ class Lsv_Login_Public {
 	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
-		if(is_page($this->get_post_slug(get_option( "lsvlogin_page")))){
+		if(is_page($this->get_post_slug(get_option( "lsvlogin_page"))) || is_page( 'post' )){
 			wp_enqueue_script( $this->plugin_name.'_login', plugin_dir_url( __FILE__ ) . 'js/lsv-login-public.js', array( 'jquery' ), $this->version, false );
 			wp_localize_script($this->plugin_name.'_login', "public_ajax_requ", array(
 				'ajaxurl' => admin_url('admin-ajax.php'),
 				'nonce' => wp_create_nonce('ajax-nonce'),
 			));
 		}
-		if(is_page($this->get_post_slug(get_option( "lsvregister_page")))){
+		if(is_page($this->get_post_slug(get_option( "lsvregister_page"))) || is_page( 'post' )){
 			wp_enqueue_script( $this->plugin_name.'_register', plugin_dir_url( __FILE__ ) . 'js/lsv-register-display.js', array( 'jquery' ), $this->version, false );
 			wp_localize_script($this->plugin_name.'_register', "public_ajax_requ", array(
 				'ajaxurl' => admin_url('admin-ajax.php'),
