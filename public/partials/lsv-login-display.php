@@ -41,7 +41,7 @@ $public_ins->matchfield_login_error;
             <h2>Forgot</h2>
             <form>
                 <p class="passbox">
-                    <label for="password">Password</label>
+                    <label for="password">New password</label>
                     <span class="showhidepass">👁</span>
                     <input id="password" type="password" class="password" placeholder="Password" required>
                     <input type="hidden" class="changableeml" value="<?php echo $email; ?>">
